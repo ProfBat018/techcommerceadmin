@@ -46,26 +46,26 @@ export const getUserRoles = async (id: string) => {
   return response.data;
 };
 
-export const sendEmailConfirmation = async (id: string) => {
+export const emailConfirmation = async (id: string) => {
   return axios.post(
-    `${API_URL}/api/v1/auth/${id}/send-confirmation`,
-    {},
+    `${API_URL}/api/v1/user/email/confirm`,
+    { id },
     { withCredentials: true }
   );
 };
 
 export const resetPassword = async (id: string) => {
   return axios.post(
-    `${API_URL}/api/v1/auth/${id}/reset-password`,
-    {},
+    `${API_URL}/api/v1/account/password/reset`,
+    { id },
     { withCredentials: true }
   );
 };
 
 export const changeEmail = async (id: string, newEmail: string) => {
-  return axios.put(
-    `${API_URL}/api/v1/auth/${id}/change-email`,
-    { email: newEmail },
+  return axios.post(
+    `${API_URL}/api/v1/account/email/change`,
+    { id, newEmail },
     { withCredentials: true }
   );
 };

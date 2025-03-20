@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   getUserRoles,
-  sendEmailConfirmation,
+  emailConfirmation,
   resetPassword,
   changeEmail,
   updateRoles,
@@ -22,6 +22,7 @@ import { RoleCombobox } from "@/components/ui/rolecombobox";
 import { RoleRequestDTO } from "@/services/requests";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface UserActionsModalProps {
   user: UserDTO;
@@ -36,6 +37,8 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({
   const [roles, setRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState(user.email);
 
   useEffect(() => {
     const loadRoles = async () => {
@@ -54,12 +57,11 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({
     loadRoles();
   }, [user.id]);
 
-  const handleChangeEmail = async () => {
-    const newEmail = prompt("Введите новый email:");
-    if (newEmail) {
-      await changeEmail(user.id, newEmail);
-      toast({ title: "Email обновлен!" });
-    }
+  const handleUpdateEmail = async () => {
+    if (!newEmail || newEmail === user.email) return;
+    await changeEmail(user.id, newEmail);
+    toast({ title: "Email успешно обновлен!" });
+    setIsEditingEmail(false);
   };
 
   const handleAddRole = async (selectedRole: string) => {
@@ -149,7 +151,7 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <Button
-                onClick={() => sendEmailConfirmation(user.id)}
+                onClick={() => emailConfirmation(user.id)}
                 variant="outline"
               >
                 Подтвердить Email
@@ -165,7 +167,29 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({
               <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 Изменение Email
               </h3>
-              <Button onClick={handleChangeEmail}>Изменить Email</Button>
+              {isEditingEmail ? (
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="Введите новый email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                  <Button onClick={handleUpdateEmail} variant="primary">
+                    Сохранить
+                  </Button>
+                  <Button
+                    onClick={() => setIsEditingEmail(false)}
+                    variant="secondary"
+                  >
+                    Отмена
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={() => setIsEditingEmail(true)}>
+                  Изменить Email
+                </Button>
+              )}
             </div>
           </div>
         )}
