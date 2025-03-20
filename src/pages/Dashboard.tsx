@@ -3,6 +3,8 @@ import { logout } from "../services/authService";
 import { useNavigate, Outlet, Link, Routes, Route } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import Users from "./Users";
+import Products from "./Products";
+import ProductDetails from "./ProductDetails";
 
 const Dashboard = () => {
   const dispatch = useAppDispatch();
@@ -38,6 +40,8 @@ const Dashboard = () => {
       <main className="flex-1 p-6">
         <Routes>
           <Route path="users" element={<Users />} />
+          <Route path="products" element={<Products />} />
+          <Route path="products/:id" element={<ProductDetails />} />
           <Route
             path="*"
             element={<h1 className="text-2xl font-bold">Выберите раздел</h1>}

@@ -36,7 +36,7 @@ export const fetchUser = async (dispatch: AppDispatch) => {
       withCredentials: true,
     });
 
-    console.log("Ответ от /me:", response.data);
+    "Ответ от /me:", response.data;
 
     if (response.data?.isSuccess) {
       dispatch(setUser({ isAuthenticated: true })); // Устанавливаем флаг аутентификации

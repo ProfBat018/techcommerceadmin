@@ -14,7 +14,6 @@ export const useUsers = (page: number, pageSize: number) => {
     fetcher
   );
 
-  console.log("API response:", data, "Error:", error);
   return { data, error, isValidating };
 };
 

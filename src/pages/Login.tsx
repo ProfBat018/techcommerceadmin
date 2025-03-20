@@ -19,7 +19,6 @@ const Login = () => {
     setSuccess(false);
     const result = await login(username, password, dispatch);
     if (result.success) {
-      console.log("Успешный вход");
       setSuccess(true);
       navigate("/");
     } else {
