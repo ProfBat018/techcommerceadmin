@@ -1,23 +1,53 @@
 import { useEffect, useState } from "react";
-import { getUserRoles, sendEmailConfirmation, resetPassword, changeEmail, updateRoles } from "../services/userService";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  getUserRoles,
+  sendEmailConfirmation,
+  resetPassword,
+  changeEmail,
+  updateRoles,
+  getRoles,
+  removeRole,
+} from "../services/userService";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { UserDTO } from "@/types/UserDTO";
+import { Badge } from "@/components/ui/badge";
+import { RoleCombobox } from "@/components/ui/rolecombobox";
+import { RoleRequestDTO } from "@/services/requests";
+import { X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface UserActionsModalProps {
   user: UserDTO;
   onClose: () => void;
 }
 
-const UserActionsModal: React.FC<UserActionsModalProps> = ({ user, onClose }) => {
+const UserActionsModal: React.FC<UserActionsModalProps> = ({
+  user,
+  onClose,
+}) => {
+  const { toast } = useToast();
   const [roles, setRoles] = useState<string[]>([]);
+  const [allRoles, setAllRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadRoles = async () => {
       const userRoles = await getUserRoles(user.id);
-      setRoles(userRoles);
+      const availableRoles = await getRoles();
+      setRoles(userRoles.data.roles);
+      setAllRoles(
+        availableRoles.filter(
+          (role) =>
+            !userRoles.data.roles.includes(role) && role !== "SuperAdmin"
+        )
+      );
       setLoading(false);
     };
 
@@ -28,35 +58,115 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({ user, onClose }) =>
     const newEmail = prompt("Введите новый email:");
     if (newEmail) {
       await changeEmail(user.id, newEmail);
-      alert("Email обновлен!");
+      toast({ title: "Email обновлен!" });
     }
   };
 
-  const handleUpdateRoles = async () => {
-    const newRoles = prompt("Введите новые роли через запятую:")?.split(",").map(r => r.trim());
-    if (newRoles) {
-      await updateRoles(user.id, newRoles);
-      setRoles(newRoles);
-      alert("Роли обновлены!");
+  const handleAddRole = async (selectedRole: string) => {
+    if (selectedRole === "SuperAdmin") {
+      toast({
+        title: "Нельзя назначить нового SuperAdmin.",
+        variant: "destructive",
+      });
+      return;
     }
+    const roleRequest: RoleRequestDTO = {
+      id: user.id,
+      roleName: selectedRole,
+    };
+    await updateRoles(roleRequest);
+    setRoles([...roles, selectedRole]);
+    setAllRoles(allRoles.filter((role) => role !== selectedRole));
+    toast({ title: "Роль добавлена!" });
+  };
+
+  const handleRemoveRole = async (roleToRemove: string) => {
+    if (roleToRemove === "SuperAdmin") {
+      toast({
+        title: "Нельзя удалить роль SuperAdmin.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const roleRequest: RoleRequestDTO = {
+      id: user.id,
+      roleName: roleToRemove,
+    };
+    await removeRole(roleRequest);
+    setRoles(roles.filter((role) => role !== roleToRemove));
+    setAllRoles([...allRoles, roleToRemove]);
+    toast({ title: "Роль удалена!" });
   };
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Управление пользователем {user.username}</DialogTitle>
+      <DialogContent className="max-w-lg p-6 rounded-xl shadow-xl bg-white dark:bg-gray-900">
+        <DialogHeader className="mb-4">
+          <DialogTitle className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+            Управление пользователем
+          </DialogTitle>
         </DialogHeader>
         {loading ? (
-          <div className="flex justify-center"><Spinner className="w-8 h-8" /></div>
+          <div className="flex justify-center py-8">
+            <Spinner className="w-12 h-12" />
+          </div>
         ) : (
-          <div className="space-y-4">
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>Роли:</strong> {roles.join(", ") || "Нет ролей"}</p>
-            <Button onClick={() => sendEmailConfirmation(user.id)}>Подтвердить Email</Button>
-            <Button onClick={() => resetPassword(user.id)}>Сброс пароля</Button>
-            <Button onClick={handleChangeEmail}>Изменить Email</Button>
-            <Button onClick={handleUpdateRoles}>Изменить Роли</Button>
+          <div className="space-y-6">
+            <div className="p-4 rounded-md bg-gray-100 dark:bg-gray-800">
+              <p className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                {user.username}
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {user.email}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Роли
+              </h3>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {roles.length > 0 ? (
+                  roles.map((role) => (
+                    <Badge
+                      key={role}
+                      className="flex items-center gap-2 px-2 py-1"
+                    >
+                      {role}
+                      {role !== "SuperAdmin" && (
+                        <button onClick={() => handleRemoveRole(role)}>
+                          <X className="h-4 w-4 text-gray-500 hover:text-red-500" />
+                        </button>
+                      )}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Нет ролей
+                  </p>
+                )}
+              </div>
+              <RoleCombobox options={allRoles} onChange={handleAddRole} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Button
+                onClick={() => sendEmailConfirmation(user.id)}
+                variant="outline"
+              >
+                Подтвердить Email
+              </Button>
+              <Button
+                onClick={() => resetPassword(user.id)}
+                variant="destructive"
+              >
+                Сброс пароля
+              </Button>
+            </div>
+            <div>
+              <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Изменение Email
+              </h3>
+              <Button onClick={handleChangeEmail}>Изменить Email</Button>
+            </div>
           </div>
         )}
       </DialogContent>

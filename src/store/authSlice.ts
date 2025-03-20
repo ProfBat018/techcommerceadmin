@@ -1,13 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { UserInfo } from "../types/UserInfo";
 
-interface UserState {
-  user: UserInfo | null;
+interface AuthState {
+  isAuthenticated: boolean;
   isLoading: boolean;
 }
 
-const initialState: UserState = {
-  user: null,
+const initialState: AuthState = {
+  isAuthenticated: false,
   isLoading: true,
 };
 
@@ -15,9 +14,14 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<UserInfo | null>) => {
-      state.user = action.payload;
-      state.isLoading = false; // Когда данные загружены, убираем состояние загрузки
+    setUser: (
+      state,
+      action: PayloadAction<{ isAuthenticated: boolean } | null>
+    ) => {
+      state.isAuthenticated = action.payload
+        ? action.payload.isAuthenticated
+        : false;
+      state.isLoading = false;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;

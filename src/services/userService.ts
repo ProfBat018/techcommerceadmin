@@ -2,6 +2,7 @@ import axios from "axios";
 import useSWR from "swr";
 import { PaginatedResult } from "../types/PaginatedResult";
 import { UserDTO } from "../types/UserDTO";
+import { RoleRequestDTO } from "./requests";
 
 const API_URL = import.meta.env.VITE_AUTH_API_URL;
 const fetcher = (url: string) =>
@@ -14,11 +15,32 @@ export const useUsers = (page: number, pageSize: number) => {
   );
 
   console.log("API response:", data, "Error:", error);
-  return { data, error, isValidating }; // Теперь возвращаем isValidating
+  return { data, error, isValidating };
+};
+
+export const getRoles = async (): Promise<string[]> => {
+  try {
+    const response = await axios.get(`${API_URL}/api/v1/Role/All`, {
+      withCredentials: true,
+    });
+
+    if (response.data?.data && Array.isArray(response.data.data)) {
+      return response.data.data.map((role) => role.roleName); // Извлекаем roleName
+    } else {
+      console.error(
+        "Ошибка: getRoles вернул некорректные данные",
+        response.data
+      );
+      return [];
+    }
+  } catch (err) {
+    console.error("Ошибка загрузки ролей:", err);
+    return [];
+  }
 };
 
 export const getUserRoles = async (id: string) => {
-  const response = await axios.get(`${API_URL}/api/v1/auth/${id}/roles`, {
+  const response = await axios.get(`${API_URL}/api/v1/user/${id}/roles`, {
     withCredentials: true,
   });
   return response.data;
@@ -48,10 +70,24 @@ export const changeEmail = async (id: string, newEmail: string) => {
   );
 };
 
-export const updateRoles = async (id: string, roles: string[]) => {
-  return axios.put(
-    `${API_URL}/api/v1/auth/${id}/roles`,
-    { roles },
-    { withCredentials: true }
-  );
+export const updateRoles = async (request: RoleRequestDTO) => {
+  const data = {
+    id: request.id,
+    roleName: request.roleName,
+  };
+
+  return axios.post(`${API_URL}/api/v1/role/set`, data, {
+    withCredentials: true,
+  });
+};
+
+export const removeRole = async (request: RoleRequestDTO) => {
+  const data = {
+    id: request.id,
+    roleName: request.roleName,
+  };
+
+  return axios.post(`${API_URL}/api/v1/role/unset`, data, {
+    withCredentials: true,
+  });
 };

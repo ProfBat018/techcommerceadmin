@@ -1,42 +1,36 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "./store/store";
-import { fetchUser } from "./services/authService";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAppDispatch } from "./store/store";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Progress } from "@/components/ui/progress";
+import { fetchUser } from "./services/authService";
+import { Toaster } from "./components/ui/toaster";
 
 const App = () => {
   const dispatch = useAppDispatch();
-  const user = useAppSelector((state) => state.auth.user);
+
   const [isLoading, setIsLoading] = useState(true);
   const [progress, setProgress] = useState(0);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const loadUser = async () => {
       const interval = setInterval(() => {
         setProgress((oldProgress) => {
-          const diff = Math.random() * 10; // Добавляем случайное значение к прогрессу
-          return Math.min(oldProgress + diff, 90); // Не даем прогрессу превысить 90%
+          const diff = Math.random() * 10;
+          return Math.min(oldProgress + diff, 90);
         });
       }, 300);
 
       await fetchUser(dispatch);
       clearInterval(interval);
-      setProgress(100); // Когда данные загружены, сразу 100%
-      setTimeout(() => setIsLoading(false), 500); // Даем эффект завершения
+      setProgress(100);
+      setTimeout(() => setIsLoading(false), 500);
     };
 
     loadUser();
   }, [dispatch]);
-
-  useEffect(() => {
-    if (!isLoading && user) {
-      navigate("/");
-    }
-  }, [user, isLoading, navigate]);
 
   if (isLoading) {
     return (
@@ -52,13 +46,16 @@ const App = () => {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route element={<ProtectedRoute />}>
-        <Route path="*" element={<Dashboard />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    <>
+      <Toaster />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="dashboard/*" element={<Dashboard />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </>
   );
 };
 
