@@ -90,3 +90,21 @@ export const removeRole = async (request: RoleRequestDTO) => {
     withCredentials: true,
   });
 };
+
+export const searchUsers = async (query: string) => {
+  const response = await axios.get(
+    `${import.meta.env.VITE_AUTH_API_URL}/api/v1/search/users/${query}`,
+    {
+      withCredentials: true,
+    }
+  );
+
+  console.log("searchUsers response", response.data);
+
+  return response.data.map((u: any) => ({
+    id: u.id,
+    username: u.userName,
+    email: u.email,
+    isEmailConfirmed: u.isEmailConfirmed,
+  }));
+};
