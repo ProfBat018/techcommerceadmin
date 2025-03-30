@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useProducts } from "../services/productService";
+import { getProductsKey, useProducts } from "@/services/productService";
 import { ProductDTO } from "../types/ProductDTO";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,14 +14,46 @@ import {
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import CreateProductModal from "@/components/CreateProductModal";
+import { ProductCount } from "@/components/ProductCount";
+import { ArrowUpDown } from "lucide-react";
+import { useNotifications } from "@/hooks/useNotifications";
+import { mutate } from "swr";
 
 const Products = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [page, setPage] = useState<number>(1);
   const pageSize = 10;
-  const { data, isValidating } = useProducts(page, pageSize);
+
+  const [sortBy, setSortBy] = useState<string>("name");
+  const [ascending, setAscending] = useState<boolean>(true);
+
+  const { data, isValidating } = useProducts(page, pageSize, sortBy, ascending);
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const swrKey = getProductsKey(page, pageSize, sortBy, ascending);
+
+  useNotifications({
+    on: {
+      ProductCreated: (payload) => {
+        console.log("🟢 Новый продукт:", payload);
+        mutate(swrKey);
+      },
+      ProductUpdated: (payload) => {
+        console.log("🔵 Обновление продукта:", payload);
+        mutate(swrKey);
+      },
+    },
+  });
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setAscending(!ascending);
+    } else {
+      setSortBy(column);
+      setAscending(true);
+    }
+    setPage(1);
+  };
 
   const handleMoreInfo = (productId: string) => {
     navigate(`/dashboard/products/${productId}`);
@@ -40,9 +72,25 @@ const Products = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Изображение</TableHead>
-              <TableHead>Название</TableHead>
+              <TableHead
+                className="cursor-pointer"
+                onClick={() => handleSort("name")}
+              >
+                Название <ArrowUpDown className="inline w-4 h-4" />
+              </TableHead>
               <TableHead>Описание</TableHead>
-              <TableHead>Цена (AZN)</TableHead>
+              <TableHead
+                className="cursor-pointer"
+                onClick={() => handleSort("price")}
+              >
+                Цена (AZN) <ArrowUpDown className="inline w-4 h-4" />
+              </TableHead>
+              <TableHead
+                className="cursor-pointer"
+                onClick={() => handleSort("count")}
+              >
+                Количество <ArrowUpDown className="inline w-4 h-4" />
+              </TableHead>
               <TableHead>Действия</TableHead>
             </TableRow>
           </TableHeader>
@@ -64,8 +112,15 @@ const Products = () => {
                     currency: "AZN",
                   })}
                 </TableCell>
+                <TableCell>
+                  <ProductCount productId={product.id} />
+                </TableCell>
                 <TableCell className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleMoreInfo(product.id)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleMoreInfo(product.id)}
+                  >
                     Узнать больше
                   </Button>
                   <Button size="sm" variant="destructive">

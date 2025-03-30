@@ -69,10 +69,12 @@ const ProductDetails = () => {
             {product.productDescription}
           </p>
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {product.price.toLocaleString("az-AZ", {
-              style: "currency",
-              currency: "AZN",
-            })}
+            {typeof product.price === "number"
+              ? product.price.toLocaleString("az-AZ", {
+                  style: "currency",
+                  currency: "AZN",
+                })
+              : "—"}
           </p>
           <Button
             variant="primary"

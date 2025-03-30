@@ -7,6 +7,7 @@ import {
   updateRoles,
   getRoles,
   removeRole,
+  deleteUser,
 } from "../services/userService";
 import {
   Dialog,
@@ -39,6 +40,7 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState(user.email);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     const loadRoles = async () => {
@@ -60,7 +62,7 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({
   const handleUpdateEmail = async () => {
     if (!newEmail || newEmail === user.email) return;
     await changeEmail(user.id, newEmail);
-    toast({ title: "Email успешно обновлен!" });
+    toast({ title: "Email успешно обновлён!" });
     setIsEditingEmail(false);
   };
 
@@ -98,6 +100,17 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({
     setRoles(roles.filter((role) => role !== roleToRemove));
     setAllRoles([...allRoles, roleToRemove]);
     toast({ title: "Роль удалена!" });
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      await deleteUser(user.id);
+      toast({ title: "Пользователь удалён." });
+      setShowDeleteConfirm(false);
+      onClose();
+    } catch (error) {
+      toast({ title: "Ошибка при удалении", variant: "destructive" });
+    }
   };
 
   return (
@@ -191,9 +204,43 @@ const UserActionsModal: React.FC<UserActionsModalProps> = ({
                 </Button>
               )}
             </div>
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full"
+              >
+                Удалить пользователя
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-sm p-6">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">
+              Подтвердите удаление
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-700 dark:text-gray-300">
+            Вы уверены, что хотите удалить пользователя{" "}
+            <strong>{user.username}</strong>? Это действие необратимо.
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteUser}>
+              Удалить
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };

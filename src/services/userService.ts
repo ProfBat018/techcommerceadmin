@@ -8,13 +8,29 @@ const API_URL = import.meta.env.VITE_AUTH_API_URL;
 const fetcher = (url: string) =>
   axios.get(url, { withCredentials: true }).then((res) => res.data);
 
-export const useUsers = (page: number, pageSize: number) => {
+export const useUsers = (
+  page: number,
+  pageSize: number,
+  sortBy: string = "userName",
+  ascending: boolean = true
+) => {
+  const key = getUsersKey(page, pageSize, sortBy, ascending);
+
   const { data, error, isValidating } = useSWR<PaginatedResult<UserDTO>>(
-    `${API_URL}/api/v1/User/All/${page}/${pageSize}`,
+    key,
     fetcher
   );
 
   return { data, error, isValidating };
+};
+
+export const getUsersKey = (
+  page: number,
+  pageSize: number,
+  sortBy: string = "userName",
+  ascending: boolean = true
+) => {
+  return `${API_URL}/api/v1/User/All/${page}/${pageSize}?sortBy=${sortBy}&ascending=${ascending}`;
 };
 
 export const getRoles = async (): Promise<string[]> => {
@@ -107,4 +123,10 @@ export const searchUsers = async (query: string) => {
     email: u.email,
     isEmailConfirmed: u.isEmailConfirmed,
   }));
+};
+
+export const deleteUser = async (userId: string): Promise<void> => {
+  await axios.delete(`${API_URL}/api/v1/User/${userId}`, {
+    withCredentials: true,
+  });
 };

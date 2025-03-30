@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useUsers, searchUsers } from "../services/userService";
+import { useUsers, searchUsers, getUsersKey } from "../services/userService";
 import { UserDTO } from "../types/UserDTO";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,8 @@ import {
 import { Pagination } from "@/components/ui/pagination";
 import UserActionsModal from "@/components/UserActionsModal";
 import { Input } from "@/components/ui/input";
+import { mutate } from "swr";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const Users = () => {
   const [page, setPage] = useState(1);
@@ -23,6 +25,32 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<UserDTO[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const swrKey = getUsersKey(page, pageSize);
+
+  useNotifications({
+    on: {
+      UserCreated: () => {
+        if (!searchResults) {
+          mutate(swrKey);
+        }
+      },
+      UserUpdated: () => {
+        if (!searchResults) {
+          mutate(swrKey);
+        }
+      },
+      UserRoleChanged: () => {
+        if (!searchResults) {
+          mutate(swrKey);
+        }
+      },
+      UserDeleted: () => {
+        if (!searchResults) {
+          mutate(swrKey);
+        }
+      },
+    },
+  });
 
   useEffect(() => {
     const delay = setTimeout(async () => {
@@ -105,4 +133,3 @@ const Users = () => {
 };
 
 export default Users;
-

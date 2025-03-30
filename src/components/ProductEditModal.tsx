@@ -8,7 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProductDTO } from "@/types/ProductDTO";
-import { updateProduct } from "@/services/productService";
+import { updateProduct, getProductCountById } from "@/services/productService";
 import { useToast } from "@/hooks/use-toast";
 import { Spinner } from "@/components/ui/spinner";
 import { useNavigate } from "react-router-dom";
@@ -31,15 +31,38 @@ const ProductEditModal: React.FC<ProductEditModalProps> = ({
   const [formData, setFormData] = useState<ProductDTO>(product);
   const [image, setImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [count, setCount] = useState<number>(0);
+  const [showZeroWarning, setShowZeroWarning] = useState(false);
 
   useEffect(() => {
+    if (!product?.id) return;
+
     setFormData(product);
-  }, [product]);
+
+    const fetchCount = async () => {
+      try {
+        const response = await getProductCountById(product.id);
+        console.log("count", response);
+        setCount(response.data); // Если API возвращает просто число, без .data
+      } catch (error) {
+        toast({
+          title: "Ошибка загрузки количества товара",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchCount();
+  }, [product?.id]); // привязываемся к id напрямую
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "price" ? parseFloat(value) || 0 : value,
+    }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,19 +71,46 @@ const ProductEditModal: React.FC<ProductEditModalProps> = ({
     }
   };
 
-  const handleSubmit = async () => {
-    setLoading(true);
+  const saveChanges = async () => {
     try {
-      const updatedProduct = await updateProduct(product.id, formData, image);
-      onProductUpdated(updatedProduct);
+      setLoading(true);
+      const updated = await updateProduct(
+        product.id,
+        formData,
+        count,
+        image || undefined
+      );
+      onProductUpdated(updated);
       toast({ title: "Товар успешно обновлён!" });
-      setTimeout(() => {
-        navigate(0); // Полностью перезагружаем страницу для обновления данных
-      }, 1000);
-    } catch (error) {
+      setTimeout(() => navigate(0), 1000);
+    } catch {
       toast({ title: "Ошибка обновления товара!", variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const updatedProduct = await updateProduct(
+        product.id,
+        formData,
+        count,
+        image
+      );
+      onProductUpdated(updatedProduct);
+      toast({ title: "Товар успешно обновлён!" });
+
+      // Подождать немного, чтобы пользователь увидел сообщение
+      setTimeout(() => {
+        setLoading(false);
+        onClose();
+        // ❗ Перезагрузка происходит только после завершения всех действий
+      }, 1000);
+    } catch (error) {
+      setLoading(false);
+      toast({ title: "Ошибка обновления товара!", variant: "destructive" });
+      // Не делаем перезагрузку, если есть ошибка
     }
   };
 
@@ -78,14 +128,12 @@ const ProductEditModal: React.FC<ProductEditModalProps> = ({
             value={formData.productName}
             onChange={handleChange}
             placeholder="Название"
-            className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
           />
           <Input
             name="productDescription"
             value={formData.productDescription}
             onChange={handleChange}
             placeholder="Описание"
-            className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
           />
           <Input
             name="price"
@@ -93,27 +141,51 @@ const ProductEditModal: React.FC<ProductEditModalProps> = ({
             value={formData.price}
             onChange={handleChange}
             placeholder="Цена"
-            className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
           />
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"
-          />
+          <Input type="file" accept="image/*" onChange={handleFileChange} />
+          <div>
+            <label className="text-sm text-gray-700 dark:text-gray-300 mb-1 block">
+              Количество на складе
+            </label>
+            <Input
+              type="number"
+              value={count}
+              onChange={(e) => setCount(parseInt(e.target.value))}
+              min={0}
+              className="w-32"
+            />
+          </div>
         </div>
         <div className="flex justify-end gap-2 mt-4">
           <Button variant="secondary" onClick={onClose}>
             Отмена
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
+          <Button variant="primary" onClick={handleSubmit}>
             {loading ? <Spinner className="w-5 h-5" /> : "Сохранить"}
           </Button>
         </div>
+
+        <Dialog open={showZeroWarning} onOpenChange={setShowZeroWarning}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Внимание</DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-700 dark:text-gray-300">
+              Количество установлено в 0. Товар станет недоступным. Продолжить?
+            </p>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowZeroWarning(false)}
+              >
+                Отмена
+              </Button>
+              <Button variant="destructive" onClick={saveChanges}>
+                Да, продолжить
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
