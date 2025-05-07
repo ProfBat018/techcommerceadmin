@@ -1,36 +1,50 @@
 import axios from "axios";
-import useSWR from "swr";
-import { PaginatedResult } from "../types/PaginatedResult";
+
 import { ProductDTO } from "../types/ProductDTO";
 
 const API_URL = import.meta.env.VITE_TECH_API_URL;
-const fetcher = (url: string) =>
-  axios.get(url, { withCredentials: true }).then((res) => res.data);
-
-
-export const useProducts = (
-  page: number,
-  pageSize: number,
-  sortBy: string = "name",
-  ascending: boolean = true
-) => {
-  const key = getProductsKey(page, pageSize, sortBy, ascending);
-  return useSWR<PaginatedResult<ProductDTO>>(key, fetcher);
-};
-
-export const getProductsKey = (
-  page: number,
-  pageSize: number,
-  sortBy: string = "name",
-  ascending: boolean = true
-) => {
-  return `${API_URL}/api/v1/Product/All/${page}/${pageSize}?sortBy=${sortBy}&ascending=${ascending}`;
-};
 
 export const getProductById = async (id: string): Promise<ProductDTO> => {
   const response = await axios.get(`${API_URL}/api/v1/Product/${id}`, {
     withCredentials: true,
   });
+  return response.data;
+};
+
+export const createProduct = async (productData: {
+  productName: string;
+  description: string;
+  price: number;
+  categories: string[];
+  images: File[];
+  mainImageIndex: number;
+}): Promise<ProductDTO> => {
+  const formData = new FormData();
+  formData.append("productName", productData.productName);
+  formData.append("description", productData.description);
+  formData.append("price", productData.price.toString());
+
+  productData.categories.forEach((cat) => {
+    formData.append("categories", cat);
+  });
+
+  productData.images.forEach((image) => {
+    formData.append("images", image); // backend должен ожидать `IFormFileCollection`
+  });
+
+  formData.append("mainImageIndex", productData.mainImageIndex.toString());
+
+  const response = await axios.post(
+    `${API_URL}/api/v1/Product/Create`,
+    formData,
+    {
+      withCredentials: true,
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
   return response.data;
 };
 

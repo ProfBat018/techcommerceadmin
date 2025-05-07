@@ -115,8 +115,6 @@ export const searchUsers = async (query: string) => {
     }
   );
 
-  console.log("searchUsers response", response.data);
-
   return response.data.map((u: any) => ({
     id: u.id,
     username: u.userName,

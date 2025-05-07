@@ -32,13 +32,11 @@ export const login = async (
 
 export const fetchUser = async (dispatch: AppDispatch) => {
   try {
-    const response = await axios.get(`${API_URL}/api/v1/auth/me`, {
+    const response = await axios.get(`${API_URL}/api/v1/auth/check`, {
       withCredentials: true,
     });
 
-    "Ответ от /me:", response.data;
-
-    if (response.data?.isSuccess) {
+    if (response.data?.isAuthenticated) {
       dispatch(setUser({ isAuthenticated: true })); // Устанавливаем флаг аутентификации
     } else {
       dispatch(setUser(null)); // Если токен невалиден

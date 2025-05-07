@@ -10,7 +10,7 @@ export interface CategoryDTO {
 
 export const useCategories = () => {
   return useSWR<{ data: CategoryDTO[] }>(
-    `${API_URL}/api/v1/Category/GetCategories/All/1/100`, // пока без пагинации
+    `${API_URL}/api/v1/Category/GetCategories/All/1/100`,
     (url) => axios.get(url, { withCredentials: true }).then((res) => res.data)
   );
 };

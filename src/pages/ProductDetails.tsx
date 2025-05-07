@@ -5,7 +5,7 @@ import { ProductDTO } from "../types/ProductDTO";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/hooks/use-toast";
-import ProductEditModal from "@/components/ProductEditModal";
+import ProductEditModal from "@/components/ProductActionsModal";
 
 const ProductDetails = () => {
   const { toast } = useToast();

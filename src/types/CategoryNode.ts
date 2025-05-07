@@ -1,5 +1,7 @@
-export interface CategoryNode {
-    name: string;
-    children: CategoryNode[];
-    parent?: CategoryNode;
-  }
+
+export type CategoryNode = {
+  categoryName: string;
+  parentCategoryName: string | null;
+  children?: CategoryNode[];
+  expanded?: boolean;
+};

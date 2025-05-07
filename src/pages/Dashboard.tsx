@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Users from "./Users";
 import Products from "./Products";
 import ProductDetails from "./ProductDetails";
+import { Categories } from "./Categories";
 
 const Dashboard = () => {
   const dispatch = useAppDispatch();
@@ -42,6 +43,7 @@ const Dashboard = () => {
           <Route path="users" element={<Users />} />
           <Route path="products" element={<Products />} />
           <Route path="products/:id" element={<ProductDetails />} />
+          <Route path="categories" element={<Categories />} />
           <Route
             path="*"
             element={<h1 className="text-2xl font-bold">Выберите раздел</h1>}

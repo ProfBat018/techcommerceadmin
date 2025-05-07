@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { getProductsKey, useProducts } from "@/services/productService";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store/store";
+import {
+  setSearchQuery,
+  clearSearchQuery,
+} from "@/store/productSearchAutocompleteSlice";
+
 import { ProductDTO } from "../types/ProductDTO";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,20 +24,35 @@ import { ProductCount } from "@/components/ProductCount";
 import { ArrowUpDown } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { mutate } from "swr";
+import { getProductsKey, useProducts } from "@/hooks/useProducts";
+import { useProductSearch } from "@/hooks/useProductSearch";
 
 const Products = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const searchQuery = useSelector(
+    (state: RootState) => state.productSearchAutocomplete.query
+  );
+  const { data: searchResults } = useProductSearch(searchQuery);
+
   const [page, setPage] = useState<number>(1);
   const pageSize = 10;
 
   const [sortBy, setSortBy] = useState<string>("name");
   const [ascending, setAscending] = useState<boolean>(true);
 
-  const { data, isValidating } = useProducts(page, pageSize, sortBy, ascending);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { data, isValidating } = useProducts(
+    page,
+    pageSize,
+    sortBy,
+    ascending,
+    ""
+  ); 
+  const swrKey = getProductsKey(page, pageSize, sortBy, ascending, "");
 
-  const swrKey = getProductsKey(page, pageSize, sortBy, ascending);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   useNotifications({
     on: {
@@ -45,6 +66,7 @@ const Products = () => {
       },
     },
   });
+
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setAscending(!ascending);
@@ -57,16 +79,45 @@ const Products = () => {
 
   const handleMoreInfo = (productId: string) => {
     navigate(`/dashboard/products/${productId}`);
+    dispatch(clearSearchQuery());
   };
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4 relative">
         <h2 className="text-2xl font-bold">Товары</h2>
+        <div className="flex flex-col w-80 gap-2 relative">
+          <input
+            type="text"
+            placeholder="Поиск по названию..."
+            value={searchQuery}
+            onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+            className="px-3 py-2 border rounded-md w-full"
+          />
+          {searchQuery && searchResults?.length > 0 && (
+            <div className="absolute top-12 z-10 w-full bg-white border shadow-lg rounded-md max-h-60 overflow-y-auto">
+              {searchResults.map((product: any) => (
+                <div
+                  key={product.productId}
+                  onClick={() => handleMoreInfo(product.productId)}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                >
+                  <img
+                    src={product.imagePath}
+                    alt={product.productName}
+                    className="h-6 w-6 object-cover rounded"
+                  />
+                  <span>{product.productName}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <Button variant="primary" onClick={() => setShowCreateModal(true)}>
           Добавить товар
         </Button>
       </div>
+
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -132,6 +183,7 @@ const Products = () => {
           </TableBody>
         </Table>
       </div>
+
       <Pagination
         page={page}
         totalPages={data?.totalPages || 1}

@@ -43,7 +43,7 @@ const ProductEditModal: React.FC<ProductEditModalProps> = ({
       try {
         const response = await getProductCountById(product.id);
         console.log("count", response);
-        setCount(response.data); // Если API возвращает просто число, без .data
+        setCount(response.data); 
       } catch (error) {
         toast({
           title: "Ошибка загрузки количества товара",
@@ -53,7 +53,7 @@ const ProductEditModal: React.FC<ProductEditModalProps> = ({
     };
 
     fetchCount();
-  }, [product?.id]); // привязываемся к id напрямую
+  }, [product?.id]); 
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -101,16 +101,15 @@ const ProductEditModal: React.FC<ProductEditModalProps> = ({
       onProductUpdated(updatedProduct);
       toast({ title: "Товар успешно обновлён!" });
 
-      // Подождать немного, чтобы пользователь увидел сообщение
+
       setTimeout(() => {
         setLoading(false);
         onClose();
-        // ❗ Перезагрузка происходит только после завершения всех действий
+
       }, 1000);
     } catch (error) {
       setLoading(false);
       toast({ title: "Ошибка обновления товара!", variant: "destructive" });
-      // Не делаем перезагрузку, если есть ошибка
     }
   };
 

@@ -6,7 +6,7 @@ const ProtectedRoute = () => {
   const isLoading = useAppSelector((state) => state.auth.isLoading);
 
   if (isLoading) {
-    return null; // Пока идет загрузка — ничего не рендерим
+    return null; 
   }
 
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;

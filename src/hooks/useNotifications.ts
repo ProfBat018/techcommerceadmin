@@ -10,8 +10,16 @@ interface UseNotificationsOptions {
 
 export function useNotifications({ on }: UseNotificationsOptions) {
   const connectionRef = useRef<HubConnection | null>(null);
+  const handlersRef = useRef<Record<string, Handler>>(on);
+
+  // Обновляем ref при изменении on
+  useEffect(() => {
+    handlersRef.current = on;
+  }, [on]);
 
   useEffect(() => {
+    if (connectionRef.current) return; // уже подключено
+
     const connection = new HubConnectionBuilder()
       .withUrl(`${import.meta.env.VITE_AUTH_API_URL}/hubs/notification`)
       .withAutomaticReconnect()
@@ -26,20 +34,28 @@ export function useNotifications({ on }: UseNotificationsOptions) {
 
         connection.on("ReceiveNotification", (message: NotificationMessage) => {
           console.log("📦 message received:", message);
-          console.log("🔍 type:", message.type);
-          console.log("🔍 payload:", message.payload);
-          const handler = on[message.type];
+          const handler = handlersRef.current[message.type];
           if (handler) {
             handler(message.payload);
           } else {
-            console.warn(`No handler for notification type: ${message.type}`);
+            console.warn(
+              `⚠️ No handler for notification type: ${message.type}`
+            );
           }
         });
       })
-      .catch((err) => console.error("SignalR connection error:", err));
+      .catch((err) => {
+        console.error("❌ SignalR connection error:", err);
+      });
+
+    connection.onclose((error) => {
+      console.warn("🔌 SignalR disconnected:", error);
+    });
 
     return () => {
-      connection.stop();
+      connection.stop().then(() => {
+        console.log("🛑 SignalR stopped");
+      });
     };
-  }, [on]);
+  }, []);
 }
